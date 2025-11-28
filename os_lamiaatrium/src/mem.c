@@ -24,9 +24,9 @@ void init_mem(void) {
 }
 
 /* get offset of the virtual address */
-static addr_t get_offset(addr_t addr) {
-	return addr & ~((~0U) << OFFSET_LEN);
-}
+// static addr_t get_offset(addr_t addr) {
+// 	return addr & ~((~0U) << OFFSET_LEN);
+// }
 
 /* get the first layer index */
 static addr_t get_first_lv(addr_t addr) {
@@ -62,8 +62,8 @@ static int translate(
 		struct pcb_t * proc) {  // Process uses given virtual address
 
 	/* Offset of the virtual address */
-	addr_t offset = get_offset(virtual_addr);
-        offset++; offset--;
+	// addr_t offset = get_offset(virtual_addr);
+        // offset++; offset--;
 	/* The first layer index */
 	addr_t first_lv = get_first_lv(virtual_addr);
 	/* The second layer index */
