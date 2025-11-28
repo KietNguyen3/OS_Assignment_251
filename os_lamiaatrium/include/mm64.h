@@ -2,6 +2,8 @@
 #define MM64_H
 
 #include "mm.h"
+#define MM64
+
 #define MM64_BITS_PER_LONG 64
 
 #define PAGING64_CPU_BUS_WIDTH 57 /* 57 bit bus - MAX SPACE 4MB */
@@ -61,6 +63,9 @@
 #define PAGING64_ADDR_P4D_MASK  GENMASK64(PAGING64_ADDR_P4D_HIBIT,PAGING64_ADDR_P4D_LOBIT)
 #define PAGING64_ADDR_PGD_MASK  GENMASK64(PAGING64_ADDR_PGD_HIBIT,PAGING64_ADDR_PGD_LOBIT)
 
-
-
+//------------USER DEFINED FUNCTIONS PFP------------//
+addr_t get_32bit_entry(addr_t base_address, struct memphy_struct* mp);
+int translate_address(struct mm_struct* mm, struct memphy_struct* mp, addr_t vaddr, addr_t* paddr); 
+int get_pte_address(struct mm_struct* mm, struct memphy_struct* mp, addr_t pgn, addr_t* pte_addr);
+void free_frame_list(struct pcb_t *caller, struct framephy_struct *frm_lst);
 #endif
