@@ -22,8 +22,6 @@
  * the address type need to be redefined
  */
 
-#define MM64
-
 #ifdef MM64
 #define ADDR_TYPE uint64_t
 #else

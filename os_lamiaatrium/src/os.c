@@ -3,6 +3,7 @@
 #include "timer.h"
 #include "sched.h"
 #include "loader.h"
+
 #include "mm.h"
 
 #include <pthread.h>
@@ -114,7 +115,8 @@ static void * ld_routine(void * args) {
 	printf("ld_routine\n");
 	while (i < num_processes) {
 		struct pcb_t * proc = load(ld_processes.path[i]);
-		struct krnl_t * krnl = proc->krnl = &os;	
+		// struct krnl_t * krnl = proc->krnl = &os;	
+		struct krnl_t * krnl = proc->krnl = malloc(sizeof(struct krnl_t));  
 
 #ifdef MLQ_SCHED
 		proc->prio = ld_processes.prio[i];
@@ -124,10 +126,10 @@ static void * ld_routine(void * args) {
 		}
 #ifdef MM_PAGING
 		krnl->mm = malloc(sizeof(struct mm_struct));
-		init_mm(krnl->mm, proc);
 		krnl->mram = mram;
 		krnl->mswp = mswp;
 		krnl->active_mswp = active_mswp;
+		init_mm(krnl->mm, proc);
 #endif
 		printf("\tLoaded a process at %s, PID: %d PRIO: %ld\n",
 			ld_processes.path[i], proc->pid, ld_processes.prio[i]);

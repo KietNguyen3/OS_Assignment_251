@@ -22,14 +22,18 @@ static struct queue_t running_list;
 #ifdef MLQ_SCHED
 static struct queue_t mlq_ready_queue[MAX_PRIO];
 static int slot[MAX_PRIO];
+static int mlq_inited = 0;			// biến trạng thái cho MLQ
 #endif
 
 int queue_empty(void) {
 #ifdef MLQ_SCHED
 	unsigned long prio;
 	for (prio = 0; prio < MAX_PRIO; prio++)
+	{
 		if(!empty(&mlq_ready_queue[prio])) 
-			return -1;
+			return 0;					// Not empty						
+	}
+	return 1;							// all MLQ rỗng
 #endif
 	return (empty(&ready_queue) && empty(&run_queue));
 }
@@ -42,10 +46,11 @@ void init_scheduler(void) {
 		mlq_ready_queue[i].size = 0;
 		slot[i] = MAX_PRIO - i; 
 	}
+	mlq_inited = 1;			// cập nhật trạng thái 
 #endif
-	ready_queue.size = 0;
-	run_queue.size = 0;
-	running_list.size = 0;
+	ready_queue.size 	= 0;
+	run_queue.size 		= 0;
+	running_list.size 	= 0;
 	pthread_mutex_init(&queue_lock, NULL);
 }
 
@@ -58,36 +63,102 @@ void init_scheduler(void) {
  */
 struct pcb_t * get_mlq_proc(void) {
 	struct pcb_t * proc = NULL;
+	int p;
+	int chosen_prio;
 
 	pthread_mutex_lock(&queue_lock);
 	/*TODO: get a process from PRIORITY [ready_queue].
 	 *      It worth to protect by a mechanism.
 	 * */
 
-	if (proc != NULL)
-		enqueue(&running_list, proc);
-	return proc;	
+	// đảm bảo slot[] được khởi tạo
+	if (!mlq_inited)
+	{
+		for (int i = 0; i < MAX_PRIO; i++)
+			slot[i] = MAX_PRIO - i;
+		mlq_inited = 1;
+	}
+
+	// nếu tất cả queue đều rỗng -> không còn proc
+	if (queue_empty())
+	{
+		pthread_mutex_unlock(&queue_lock);
+		return NULL;
+	}
+
+	// chọn priority có slot > 0 && queue ko rỗng
+	chosen_prio = -1;
+	for (p = 0; p < MAX_PRIO; p++)
+	{
+		if (!empty(&mlq_ready_queue[p]) && slot[p] > 0)
+		{
+			chosen_prio = p;
+			break;
+		}
+	}
+
+	// đã thấy mlq cần tìm nhưng hết slot -> reset slot[]
+	if (chosen_prio < 0)
+	{
+		for (p = 0; p < MAX_PRIO; p++)
+			slot[p] = MAX_PRIO - p;		// reset to get proc
+
+		// tìm lại 
+		for (p = 0; p < MAX_PRIO; p++)
+		{
+			if (!empty(&mlq_ready_queue[p]) && slot[p] > 0)	
+			{
+				chosen_prio = p;
+				break;
+			}
+		}
+	}
+
+	// đã tìm thấy -> lấy ra khỏi ready -> thêm vào running
+	if (chosen_prio >= 0)
+	{
+		proc = dequeue(&mlq_ready_queue[chosen_prio]);
+		if (proc != NULL)
+		{
+			slot[chosen_prio]--;
+
+			// update con trỏ kernel của proc
+			proc->krnl->ready_queue 	= &ready_queue;
+			proc->krnl->mlq_ready_queue = mlq_ready_queue;
+			proc->krnl->running_list	= &running_list;
+
+			// đưa proc vào running list
+			enqueue(&running_list, proc);
+		}
+	}
+
+	pthread_mutex_unlock(&queue_lock);
+	return proc;
 }
 
+/* Put a process back to run queue */
 void put_mlq_proc(struct pcb_t * proc) {
-	proc->krnl->ready_queue = &ready_queue;
+	proc->krnl->ready_queue 	= &ready_queue;
 	proc->krnl->mlq_ready_queue = mlq_ready_queue;
-	proc->krnl->running_list = &running_list;
+	proc->krnl->running_list 	= &running_list;
 
 	/* TODO: put running proc to running_list 
 	 *       It worth to protect by a mechanism.
-	 * 
 	 */
-
 	pthread_mutex_lock(&queue_lock);
+	
+	// proc đang RUNNING -> gỡ khỏi running_list -> trả về ready_list
+	purgequeue(&running_list, proc);
 	enqueue(&mlq_ready_queue[proc->prio], proc);
+
 	pthread_mutex_unlock(&queue_lock);
 }
 
+/* Add a new process to ready queue */
 void add_mlq_proc(struct pcb_t * proc) {
-	proc->krnl->ready_queue = &ready_queue;
+	proc->krnl->ready_queue 	= &ready_queue;
 	proc->krnl->mlq_ready_queue = mlq_ready_queue;
-	proc->krnl->running_list = &running_list;
+	proc->krnl->running_list 	= &running_list;
 
 	/* TODO: put running proc to running_list
 	 *       It worth to protect by a mechanism.
@@ -95,7 +166,10 @@ void add_mlq_proc(struct pcb_t * proc) {
 	 */
        
 	pthread_mutex_lock(&queue_lock);
+
+	purgequeue(&running_list, proc);		// cho chắc thui =))
 	enqueue(&mlq_ready_queue[proc->prio], proc);
+
 	pthread_mutex_unlock(&queue_lock);	
 }
 
@@ -111,31 +185,50 @@ void add_proc(struct pcb_t * proc) {
 	return add_mlq_proc(proc);
 }
 #else
+
 struct pcb_t * get_proc(void) {
 	struct pcb_t * proc = NULL;
 
 	pthread_mutex_lock(&queue_lock);
 	/*TODO: get a process from [ready_queue].
 	 *       It worth to protect by a mechanism.
-	 * 
 	 */
 
+	// ưu tiên lấy từ run_queue(running -> idle -> ready)
+	if (!empty(&run_queue))
+	{
+		proc = dequeue(&run_queue);
+	}
+	else
+	{
+	// run_queue rỗng => chọn từ ready_queue
+		proc = dequeue(&ready_queue);
+	}
+
+	if (proc != NULL)
+	{
+		proc->krnl->ready_queue		= &ready_queue;
+		proc->krnl->running_list	= &running_list;
+		enqueue(&running_list, proc);
+	}
 	pthread_mutex_unlock(&queue_lock);
 
 	return proc;
 }
 
 void put_proc(struct pcb_t * proc) {
-	proc->krnl->ready_queue = &ready_queue;
-	proc->krnl->running_list = &running_list;
+	proc->krnl->ready_queue		= &ready_queue;
+	proc->krnl->running_list 	= &running_list;
 
 	/* TODO: put running proc to running_list 
 	 *       It worth to protect by a mechanism.
-	 * 
 	 */
 
 	pthread_mutex_lock(&queue_lock);
+
+	purgequeue(&running_list, proc);
 	enqueue(&run_queue, proc);
+
 	pthread_mutex_unlock(&queue_lock);
 }
 
@@ -145,11 +238,13 @@ void add_proc(struct pcb_t * proc) {
 
 	/* TODO: put running proc to running_list 
 	 *       It worth to protect by a mechanism.
-	 * 
 	 */
 
 	pthread_mutex_lock(&queue_lock);
+
+	purgequeue(&running_list, proc);
 	enqueue(&ready_queue, proc);
+
 	pthread_mutex_unlock(&queue_lock);	
 }
 #endif

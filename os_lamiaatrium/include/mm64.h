@@ -2,7 +2,6 @@
 #define MM64_H
 
 #include "mm.h"
-#define MM64
 
 #define MM64_BITS_PER_LONG 64
 
