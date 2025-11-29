@@ -23,8 +23,8 @@
 static struct pcb_t *find_pcb_by_pid(struct krnl_t *krnl, uint32_t pid)
 {
     int i;
-
-    /* chạy qua danh sách đang chạy */
+   
+/* chạy qua danh sách đang chạy */
     if (krnl->running_list != NULL) {
         struct queue_t *rq = krnl->running_list;
         for (i = 0; i < rq->size; i++) {
@@ -34,7 +34,7 @@ static struct pcb_t *find_pcb_by_pid(struct krnl_t *krnl, uint32_t pid)
         }
     }
 
-    /* nếu chưa thấy thì thử trong ready_queue */
+/* nếu chưa thấy thì thử trong ready_queue */
     if (krnl->ready_queue != NULL) {
         struct queue_t *rq = krnl->ready_queue;
         for (i = 0; i < rq->size; i++) {
@@ -44,7 +44,6 @@ static struct pcb_t *find_pcb_by_pid(struct krnl_t *krnl, uint32_t pid)
         }
     }
 
-    /* không kiếm ra thì chịu */
     return NULL;
 }
 
