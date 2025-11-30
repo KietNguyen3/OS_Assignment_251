@@ -1,0 +1,10 @@
+0 50
+alloc 16384 0     
+write 2 0 4096
+write 3 0 8192
+write 4 0 12288   
+write 5 0 0
+write 6 0 4096
+write 7 0 8192
+write 8 0 12288
+

@@ -1,0 +1,22 @@
+[CONF] time_slice=2 cpus=1 procs=1
+[CONF] MM_FIXED_MEMSZ=FILE RAM=0x100000 SWP0=0x200000 SWP1=0 SWP2=0 SWP3=0
+[CONF] proc[0]: start=0 path=input/proc/p_demand_small prio=0
+[BOOT] starting timer...
+Time slot   0
+[MEMPHY] format: maxsz=1048576 pagesz=256 numfp=4096
+[MEMPHY] init_memphy: max_size=1048576 rdmflg=1
+[BOOT] init MEMRAM size=0x100000
+[MEMPHY] format: maxsz=2097152 pagesz=256 numfp=8192
+[MEMPHY] init_memphy: max_size=2097152 rdmflg=1
+[BOOT] init MEMSWP[0] size=0x200000
+[BOOT] MEMSWP[1] disabled (size=0)
+[BOOT] MEMSWP[2] disabled (size=0)
+[BOOT] MEMSWP[3] disabled (size=0)
+[OS] main: MM_PAGING enabled, mram=0x562019582c70 mswp=0x562019582ca0 active_mswp=0x5620195a2cd0
+[OS] main: scheduler initialized
+ld_routine
+[OS] Loader thread started, num_processes=1
+[OS] main: CPU thread 0 created
+[OS] CPU 0 thread started
+[OS] CPU 0: no process in ready queue at time 0
+get_opcode return Opcode: #

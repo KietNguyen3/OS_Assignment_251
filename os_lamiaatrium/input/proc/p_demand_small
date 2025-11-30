@@ -1,0 +1,9 @@
+0 10
+alloc 4096 0       # allocate exactly 1 page
+write 1 0 0        # write to first byte
+write 2 0 100      # still inside first page
+calc
+calc
+read 0 0 1         # read back
+calc
+calc

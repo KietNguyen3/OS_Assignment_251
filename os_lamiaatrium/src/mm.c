@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 #if !defined(MM64)
+
 /*
  * PAGING based Memory Management
  * Memory management unit mm/mm.c
@@ -276,5 +277,9 @@ int print_pgtbl(struct pcb_t *caller, uint32_t start, uint32_t end)
   printf("[ERROR] %s: This feature 32 bit mode is deprecated\n", __func__);
   return 0;
 }
+/* ===== Global paging statistics definition & printer ===== */
+
+/* This is the single definition of the global stats variable */
+
 
 #endif //ndef MM64

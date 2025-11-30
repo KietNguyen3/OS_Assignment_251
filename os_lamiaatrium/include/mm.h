@@ -2,7 +2,6 @@
 
 #include "common.h"
 #include "bitops.h"
-#include "string.h"
 
 /* CPU Bus definition */
 #define PAGING_CPU_BUS_WIDTH 22 /* 22bit bus - MAX SPACE 4MB */
